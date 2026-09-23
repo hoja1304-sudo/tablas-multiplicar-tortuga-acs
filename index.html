@@ -675,9 +675,8 @@
 
   // ---------- Entrada ----------
   function posEvt(e){ const rect=canvas.getBoundingClientRect();
-    const sx=W/(canvas.clientWidth||W), sy=H/(canvas.clientHeight||H);
-    const cx=((e.touches?e.touches[0].clientX:e.clientX)-rect.left-canvas.clientLeft)*sx;
-    const cy=((e.touches?e.touches[0].clientY:e.clientY)-rect.top-canvas.clientTop)*sy;
+    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
+    const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
     mouse.x=Math.max(0,Math.min(W,cx)); mouse.y=Math.max(0,Math.min(H,cy)); mouse.active=true; }
   canvas.addEventListener('mousemove',posEvt);
   canvas.addEventListener('mouseenter',posEvt);
@@ -739,30 +738,22 @@
   }
 
   function moverOceano(dt){
-    // Como las monedas: la tortuga queda centrada bajo el dedo o el mouse.
-    // Cerca de los bordes de la pantalla, el océano se desplaza y la tortuga sigue bajo el puntero.
-    if(mouse.active){
-      const margin=W*0.22, maxPan=W*0.012*(dt/16.67);
-      let pan=0;
-      if(mouse.x>W-margin) pan=maxPan*Math.min(1,(mouse.x-(W-margin))/margin);
-      else if(mouse.x<margin) pan=-maxPan*Math.min(1,(margin-mouse.x)/margin);
-      camX=Math.max(0,Math.min(worldW-W,camX+pan));
-    }
+    camX=Math.max(0,Math.min(worldW-W,turtle.x-W/2));
     const tx=mouse.active?(camX+mouse.x):turtle.x, ty=mouse.active?mouse.y:turtle.y;
-    const dx=tx-turtle.x, dy=ty-turtle.y, d=Math.hypot(dx,dy);
-    const maxV=W*0.03*(dt/16.67);
-    let mvx=dx, mvy=dy;
-    if(d>turtle.r*1.2 && d>maxV){ mvx=dx/d*maxV; mvy=dy/d*maxV; }   // puntero lejos: nada rápido hasta alcanzarlo
-    turtle.x+=mvx; turtle.y+=mvy;
+    let dx=tx-turtle.x, dy=ty-turtle.y;
+    const L=turtle.r*2.4, d=Math.hypot(dx,dy)||1;          // correa: el guía no se aleja de la tortuga
+    if(d>L){ dx=dx/d*L; dy=dy/d*L; }
+    aimX=turtle.x+dx; aimY=turtle.y+dy;
+    const maxV=W*0.0088, ease=0.16;
+    let mvx=dx*ease, mvy=dy*ease; const mv=Math.hypot(mvx,mvy);
+    if(mv>maxV){ mvx=mvx/mv*maxV; mvy=mvy/mv*maxV; }
+    turtle.x+=mvx*(dt/16.67); turtle.y+=mvy*(dt/16.67);
     turtle.x=Math.max(turtle.r,Math.min(worldW-turtle.r,turtle.x));
     turtle.y=Math.max(H*0.06,Math.min(H*0.94-turtle.r*0.2,turtle.y));
-    aimX=turtle.x; aimY=turtle.y;
     // orientar la tortuga (vista de espalda) hacia donde nada
-    const mv=Math.hypot(mvx,mvy);
-    if(mv>0.8){ const ta=Math.atan2(mvy,mvx); let da=ta-turtle.ang; while(da>Math.PI)da-=6.283185; while(da<-Math.PI)da+=6.283185; turtle.ang+=da*0.25; }
+    if(Math.hypot(dx,dy)>1.2){ const ta=Math.atan2(dy,dx); let da=ta-turtle.ang; while(da>Math.PI)da-=6.283185; while(da<-Math.PI)da+=6.283185; turtle.ang+=da*0.18; }
     turtle.anim += (mv>0.5?dt*0.02:dt*0.006);
-    // la cámara nunca deja a la tortuga fuera de la pantalla
-    camX=Math.max(0,Math.min(worldW-W,Math.min(turtle.x-turtle.r,Math.max(turtle.x+turtle.r-W,camX))));
+    camX=Math.max(0,Math.min(worldW-W,turtle.x-W/2));
   }
   function moverLaberinto(dt){
     camX=0;
