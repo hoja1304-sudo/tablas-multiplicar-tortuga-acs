@@ -174,7 +174,7 @@
   </div>
   <div class="panel"><span class="lbl">Progreso</span><span class="val" id="progreso">0/10</span></div>
   <div class="panel"><span class="lbl">⏱️ Tiempo</span><span class="val" id="tiempo">00:00</span></div>
-  <div class="panel hidden" id="panelVidas"><span class="lbl">❤️ Vidas</span><span class="val" id="vidas">❤️❤️❤️❤️❤️</span></div>
+  <div class="panel hidden" id="panelVidas"><span class="lbl">❤️ Vidas</span><span class="val" id="vidas">❤️❤️❤️❤️❤️❤️</span></div>
   <div class="panel" id="panelVoz" title="Activar/desactivar la voz"><span class="lbl">🔊 Voz</span><span class="val" id="vozEstado">ON</span></div>
   <div class="panel"><span class="lbl">🏆 Récord</span><span class="val" id="record">—</span></div>
   <div class="panel hidden" id="btnMenuJuego" title="Volver al menú principal"><span class="lbl">Salir</span><span class="val">🏠 Menú</span></div>
@@ -361,7 +361,7 @@
   let mazeMeta=null;
   let frR=30;                // radio de pez/fruta actual
   // Océano
-  const VIDAS_INI=5;
+  const VIDAS_INI=6;
   let vidas=VIDAS_INI, invuln=0;
   let erizos=[], algas=[], decoys=[], burbujas=[];
   const FISH_COL=["#ff8f4d","#ffd23f","#4dd0e1","#ff7bac","#7b9dff","#69db7c","#e879f9"];
@@ -473,8 +473,8 @@
     }
     for(let i=0;i<8;i++) decoys.push({ valor:0, fx:Math.random()*0.94+0.03, fy:0.12+Math.random()*0.64,
       tipo:i%FISH_COL.length, bob:Math.random()*6.28, sp:(Math.random()<0.5?-1:1)*0.0004, ang:0 });
-    for(let i=0;i<7;i++) erizos.push({ fx:0.08+Math.random()*0.88, fy:0.80+Math.random()*0.12,
-      vy:0.011+Math.random()*0.025, dx:(Math.random()<0.5?-1:1)*0.0004, esp:0.6+Math.random()*0.8 });
+    for(let i=0;i<4;i++) erizos.push({ fx:0.08+Math.random()*0.88, fy:0.80+Math.random()*0.12,
+      vy:0.006+Math.random()*0.012, dx:(Math.random()<0.5?-1:1)*0.00025, esp:0.6+Math.random()*0.8 });
     for(let i=0;i<12;i++) algas.push({ fx:Math.random(), h:0.10+Math.random()*0.14, ph:Math.random()*6.28, col:(Math.random()<0.5?"#2e9e4f":"#39c96f") });
     turtle.r=Math.max(20,H*0.075); frR=H*0.058;
     turtle.x=W*0.15; turtle.y=H*0.5; turtle.ang=0; camX=0;
@@ -675,8 +675,9 @@
 
   // ---------- Entrada ----------
   function posEvt(e){ const rect=canvas.getBoundingClientRect();
-    const cx=(e.touches?e.touches[0].clientX:e.clientX)-rect.left;
-    const cy=(e.touches?e.touches[0].clientY:e.clientY)-rect.top;
+    const sx=W/(canvas.clientWidth||W), sy=H/(canvas.clientHeight||H);
+    const cx=((e.touches?e.touches[0].clientX:e.clientX)-rect.left-canvas.clientLeft)*sx;
+    const cy=((e.touches?e.touches[0].clientY:e.clientY)-rect.top-canvas.clientTop)*sy;
     mouse.x=Math.max(0,Math.min(W,cx)); mouse.y=Math.max(0,Math.min(H,cy)); mouse.active=true; }
   canvas.addEventListener('mousemove',posEvt);
   canvas.addEventListener('mouseenter',posEvt);
@@ -701,7 +702,7 @@
       for(const e of erizos){
         e.fy -= e.vy*(dt/1000); e.fx += e.dx*(dt/16.67);
         if(e.fx<0.02){e.fx=0.02;e.dx=Math.abs(e.dx);} if(e.fx>0.98){e.fx=0.98;e.dx=-Math.abs(e.dx);}
-        if(e.fy < -0.06){ e.fy=0.9+Math.random()*0.08; e.fx=0.04+Math.random()*0.92; e.vy=0.011+Math.random()*0.025; e.dx=(Math.random()<0.5?-1:1)*0.0004; }
+        if(e.fy < -0.06){ e.fy=0.9+Math.random()*0.08; e.fx=0.04+Math.random()*0.92; e.vy=0.006+Math.random()*0.012; e.dx=(Math.random()<0.5?-1:1)*0.00025; }
       }
       // erizos: quitan una vida y detienen a la tortuga
       if(invuln<=0){
@@ -738,22 +739,30 @@
   }
 
   function moverOceano(dt){
-    camX=Math.max(0,Math.min(worldW-W,turtle.x-W/2));
+    // Como las monedas: la tortuga queda centrada bajo el dedo o el mouse.
+    // Cerca de los bordes de la pantalla, el océano se desplaza y la tortuga sigue bajo el puntero.
+    if(mouse.active){
+      const margin=W*0.22, maxPan=W*0.012*(dt/16.67);
+      let pan=0;
+      if(mouse.x>W-margin) pan=maxPan*Math.min(1,(mouse.x-(W-margin))/margin);
+      else if(mouse.x<margin) pan=-maxPan*Math.min(1,(margin-mouse.x)/margin);
+      camX=Math.max(0,Math.min(worldW-W,camX+pan));
+    }
     const tx=mouse.active?(camX+mouse.x):turtle.x, ty=mouse.active?mouse.y:turtle.y;
-    let dx=tx-turtle.x, dy=ty-turtle.y;
-    const L=turtle.r*2.4, d=Math.hypot(dx,dy)||1;          // correa: el guía no se aleja de la tortuga
-    if(d>L){ dx=dx/d*L; dy=dy/d*L; }
-    aimX=turtle.x+dx; aimY=turtle.y+dy;
-    const maxV=W*0.0088, ease=0.16;
-    let mvx=dx*ease, mvy=dy*ease; const mv=Math.hypot(mvx,mvy);
-    if(mv>maxV){ mvx=mvx/mv*maxV; mvy=mvy/mv*maxV; }
-    turtle.x+=mvx*(dt/16.67); turtle.y+=mvy*(dt/16.67);
+    const dx=tx-turtle.x, dy=ty-turtle.y, d=Math.hypot(dx,dy);
+    const maxV=W*0.03*(dt/16.67);
+    let mvx=dx, mvy=dy;
+    if(d>turtle.r*1.2 && d>maxV){ mvx=dx/d*maxV; mvy=dy/d*maxV; }   // puntero lejos: nada rápido hasta alcanzarlo
+    turtle.x+=mvx; turtle.y+=mvy;
     turtle.x=Math.max(turtle.r,Math.min(worldW-turtle.r,turtle.x));
     turtle.y=Math.max(H*0.06,Math.min(H*0.94-turtle.r*0.2,turtle.y));
+    aimX=turtle.x; aimY=turtle.y;
     // orientar la tortuga (vista de espalda) hacia donde nada
-    if(Math.hypot(dx,dy)>1.2){ const ta=Math.atan2(dy,dx); let da=ta-turtle.ang; while(da>Math.PI)da-=6.283185; while(da<-Math.PI)da+=6.283185; turtle.ang+=da*0.18; }
+    const mv=Math.hypot(mvx,mvy);
+    if(mv>0.8){ const ta=Math.atan2(mvy,mvx); let da=ta-turtle.ang; while(da>Math.PI)da-=6.283185; while(da<-Math.PI)da+=6.283185; turtle.ang+=da*0.25; }
     turtle.anim += (mv>0.5?dt*0.02:dt*0.006);
-    camX=Math.max(0,Math.min(worldW-W,turtle.x-W/2));
+    // la cámara nunca deja a la tortuga fuera de la pantalla
+    camX=Math.max(0,Math.min(worldW-W,Math.min(turtle.x-turtle.r,Math.max(turtle.x+turtle.r-W,camX))));
   }
   function moverLaberinto(dt){
     camX=0;
