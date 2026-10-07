@@ -474,7 +474,7 @@
     }
     for(let i=0;i<8;i++) decoys.push({ valor:0, fx:Math.random()*0.94+0.03, fy:0.12+Math.random()*0.64,
       tipo:i%FISH_COL.length, bob:Math.random()*6.28, sp:(Math.random()<0.5?-1:1)*0.0004, ang:0 });
-    for(let i=0;i<4;i++) erizos.push({ fx:0.08+Math.random()*0.88, fy:0.80+Math.random()*0.12,
+    for(let i=0;i<2;i++) erizos.push({ fx:0.08+Math.random()*0.88, fy:0.80+Math.random()*0.12,
       vy:0.006+Math.random()*0.012, dx:(Math.random()<0.5?-1:1)*0.00025, esp:0.6+Math.random()*0.8 });
     for(let i=0;i<12;i++) algas.push({ fx:Math.random(), h:0.10+Math.random()*0.14, ph:Math.random()*6.28, col:(Math.random()<0.5?"#2e9e4f":"#39c96f") });
     turtle.r=Math.max(20,H*0.075); frR=H*0.058;
